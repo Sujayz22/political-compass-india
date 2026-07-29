@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Where Do You Sit? — A Political Self-Check</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,500;9..144,600&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #2B0F13;
+    --bg-2: #391418;
+    --bg-3: #45181D;
+    --paper: #F3E9D8;
+    --paper-dim: #E4D7BF;
+    --ink: #241412;
+    --ink-soft: #5B4A40;
+    --brass: #C9A227;
+    --brass-dim: #8f7326;
+    --left: #4C6FA5;
+    --right: #9C3D34;
+    --center: #9C9184;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background: radial-gradient(ellipse at 50% -10%, var(--bg-3), var(--bg) 60%);
+    color: var(--paper);
+    font-family: 'Inter', sans-serif;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding: 32px 16px 80px;
+  }
+  .wrap{ width:100%; max-width:640px; }
+
+  header{ text-align:center; margin-bottom: 8px; }
+  .eyebrow{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    letter-spacing:0.18em;
+    text-transform:uppercase;
+    color: var(--brass);
+    margin-bottom:10px;
+  }
+  h1{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size: clamp(28px, 6vw, 42px);
+    line-height:1.05;
+    margin: 0 0 10px;
+    letter-spacing: -0.01em;
+  }
+  .sub{
+    color: var(--paper-dim);
+    font-size:14.5px;
+    line-height:1.55;
+    max-width: 460px;
+    margin: 0 auto;
+  }
+
+  /* --- Hemicycle --- */
+  .chamber{
+    position:relative;
+    margin: 28px auto 6px;
+    width:100%;
+    max-width: 480px;
+  }
+  svg#hemicycle{ width:100%; height:auto; overflow:visible; display:block; }
+  .seat{ transition: fill 0.4s ease, opacity 0.4s ease; }
+  .marker{
+    transition: cx 900ms cubic-bezier(.2,.8,.2,1), cy 900ms cubic-bezier(.2,.8,.2,1);
+  }
+  .marker-glow{
+    transition: cx 900ms cubic-bezier(.2,.8,.2,1), cy 900ms cubic-bezier(.2,.8,.2,1);
+  }
+  .pole-label{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing:0.08em;
+    fill: var(--paper-dim);
+    text-transform:uppercase;
+  }
+
+  /* --- Card --- */
+  .card{
+    background: var(--paper);
+    color: var(--ink);
+    border-radius: 4px;
+    padding: 30px 28px 26px;
+    margin-top: 22px;
+    box-shadow: 0 20px 50px -18px rgba(0,0,0,0.6);
+    position:relative;
+  }
+  .card::before{
+    content:"";
+    position:absolute;
+    top:0; left:0; right:0;
+    height:3px;
+    background: linear-gradient(90deg, var(--left), var(--center), var(--right));
+  }
+  .progress-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    margin-bottom:18px;
+  }
+  .qnum{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px;
+    letter-spacing:0.06em;
+    color: var(--ink-soft);
+  }
+  .track{
+    flex:1;
+    height:2px;
+    background: rgba(36,20,18,0.12);
+    margin-left:16px;
+    position:relative;
+    border-radius:2px;
+  }
+  .track-fill{
+    position:absolute; left:0; top:0; height:100%;
+    background: var(--brass-dim);
+    border-radius:2px;
+    transition: width 500ms ease;
+  }
+  .scenario{
+    font-family:'Fraunces', serif;
+    font-weight:500;
+    font-size: clamp(18px, 3.6vw, 21px);
+    line-height:1.32;
+    margin: 0 0 22px;
+  }
+  .options{ display:flex; flex-direction:column; gap:10px; }
+  .opt{
+    text-align:left;
+    border:1px solid rgba(36,20,18,0.18);
+    background: transparent;
+    color: var(--ink);
+    padding: 13px 16px;
+    border-radius:3px;
+    font-family:'Inter', sans-serif;
+    font-size:14.5px;
+    line-height:1.4;
+    cursor:pointer;
+    display:flex;
+    gap:12px;
+    transition: border-color 160ms ease, background 160ms ease, transform 160ms ease;
+  }
+  .opt:hover{ border-color: var(--brass-dim); background: rgba(201,162,39,0.08); }
+  .opt:active{ transform: scale(0.995); }
+  .opt.chosen{ border-color: var(--brass-dim); background: rgba(201,162,39,0.14); }
+  .opt .tag{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px;
+    font-weight:500;
+    color: var(--ink-soft);
+    flex-shrink:0;
+  }
+  .nav-row{
+    display:flex; justify-content:space-between; align-items:center;
+    margin-top:22px;
+  }
+  .back-btn{
+    background:none; border:none;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11.5px;
+    letter-spacing:0.05em;
+    color: var(--ink-soft);
+    cursor:pointer;
+    text-transform:uppercase;
+    padding:6px 0;
+    visibility:hidden;
+  }
+  .back-btn.show{ visibility:visible; }
+  .back-btn:hover{ color: var(--ink); }
+
+  /* --- Results --- */
+  .result{ display:none; }
+  .result-label{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    letter-spacing:0.14em;
+    text-transform:uppercase;
+    color: var(--ink-soft);
+    margin-bottom:6px;
+  }
+  .result-title{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size: clamp(24px,5vw,32px);
+    margin:0 0 14px;
+  }
+  .result-body{ font-size:14.5px; line-height:1.6; color:#3c2f27; margin-bottom:22px; }
+  .axes{ display:flex; flex-direction:column; gap:16px; margin-bottom:22px; }
+  .axis-row .axis-labels{
+    display:flex; justify-content:space-between;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10.5px; letter-spacing:0.04em;
+    color: var(--ink-soft);
+    margin-bottom:6px;
+    text-transform:uppercase;
+  }
+  .axis-bar{
+    position:relative;
+    height:6px;
+    border-radius:3px;
+    background: linear-gradient(90deg, var(--left), var(--center), var(--right));
+  }
+  .axis-dot{
+    position:absolute;
+    top:50%;
+    width:12px; height:12px;
+    background: var(--ink);
+    border: 2px solid var(--paper);
+    border-radius:50%;
+    transform: translate(-50%,-50%);
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.25);
+    transition: left 900ms cubic-bezier(.2,.8,.2,1);
+  }
+  .counts{
+    display:flex; gap:18px; margin-bottom: 22px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12.5px;
+    color: var(--ink-soft);
+  }
+  .counts b{ color: var(--ink); }
+  .restart{
+    background: var(--ink);
+    color: var(--paper);
+    border:none;
+    padding: 12px 20px;
+    border-radius:3px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px;
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    cursor:pointer;
+  }
+  .restart:hover{ background:#3a241e; }
+
+  footer{
+    margin-top:30px;
+    text-align:center;
+    font-size:11.5px;
+    color: rgba(243,233,216,0.45);
+    max-width:460px;
+    line-height:1.6;
+  }
+
+  @media (max-width:480px){
+    .card{ padding:24px 18px 22px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">A self-check &middot; Indian context</div>
+    <h1>Where do you sit?</h1>
+    <p class="sub">In 1789, supporters of the French Revolution sat on the left of the assembly hall, and supporters of the monarchy sat on the right — that's where the terms come from. Answer ten everyday scenarios and watch where your seat ends up.</p>
+  </header>
+
+  <div class="chamber">
+    <svg id="hemicycle" viewBox="0 0 480 260">
+      <!-- seat arcs generated by JS -->
+      <g id="seats"></g>
+      <circle id="markerGlow" class="marker-glow" cx="240" cy="240" r="14" fill="var(--brass)" opacity="0.25"/>
+      <circle id="marker" class="marker" cx="240" cy="240" r="7" fill="var(--brass)" stroke="#2B0F13" stroke-width="1.5"/>
+      <text x="34" y="252" class="pole-label" text-anchor="start">Left</text>
+      <text x="240" y="252" class="pole-label" text-anchor="middle">Centre</text>
+      <text x="446" y="252" class="pole-label" text-anchor="end">Right</text>
+    </svg>
+  </div>
+
+  <div class="card">
+    <div id="quizView">
+      <div class="progress-row">
+        <span class="qnum" id="qnum">Q1 / 10</span>
+        <div class="track"><div class="track-fill" id="trackFill" style="width:0%"></div></div>
+      </div>
+      <p class="scenario" id="scenario"></p>
+      <div class="options" id="options"></div>
+      <div class="nav-row">
+        <button class="back-btn" id="backBtn">&larr; Back</button>
+        <span></span>
+      </div>
+    </div>
+
+    <div id="resultView" class="result">
+      <div class="result-label">Your seat</div>
+      <h2 class="result-title" id="resultTitle"></h2>
+      <p class="result-body" id="resultBody"></p>
+
+      <div class="axes">
+        <div class="axis-row">
+          <div class="axis-labels"><span>State-run economy</span><span>Free market</span></div>
+          <div class="axis-bar"><div class="axis-dot" id="econDot"></div></div>
+        </div>
+        <div class="axis-row">
+          <div class="axis-labels"><span>Secular / pluralist</span><span>Nationalist / traditional</span></div>
+          <div class="axis-bar"><div class="axis-dot" id="cultDot"></div></div>
+        </div>
+      </div>
+
+      <div class="counts">
+        <span>Left: <b id="cA">0</b></span>
+        <span>Centre: <b id="cC">0</b></span>
+        <span>Right: <b id="cB">0</b></span>
+      </div>
+
+      <button class="restart" id="restartBtn">Take it again</button>
+    </div>
+  </div>
+
+  <footer>This is an informal reflection tool, not a scientific or academic measure of political ideology. Real views are almost always more nuanced than any quiz can capture.</footer>
+</div>
+
+<script>
+const QUESTIONS = [
+  {
+    text: "A state government renames a city or road to reflect a Hindu/local historical name, replacing a Mughal-era or colonial-era name.",
+    axis: "cultural",
+    options: [
+      { key:"A", label:"Oppose it — history shouldn't be erased or rewritten to suit current politics." },
+      { key:"B", label:"Support it — reclaiming names tied to India's own civilization corrects old wrongs." },
+      { key:"C", label:"Depends on the specific case and reasoning, not a blanket yes or no." }
+    ]
+  },
+  {
+    text: "A private company wants to lay off workers to cut costs during a slowdown.",
+    axis: "economic",
+    options: [
+      { key:"A", label:"Government should step in — strong labor laws should make layoffs hard and protect jobs." },
+      { key:"B", label:"Government should stay out — businesses need flexibility to survive and grow." },
+      { key:"C", label:"Some protection is fair, but excessive restrictions hurt the economy too." }
+    ]
+  },
+  {
+    text: "NEET/JEE-style entrance exams and caste-based reservation in seats.",
+    axis: "economic",
+    options: [
+      { key:"A", label:"Reservations should continue or expand — historical disadvantage still needs correcting." },
+      { key:"B", label:"Move towards merit and economic criteria — caste-based quotas should shrink over time." },
+      { key:"C", label:"Keep reservations but also add income/economic criteria to make it fairer." }
+    ]
+  },
+  {
+    text: "A film, book, or comedy show mocks a religious figure or ritual.",
+    axis: "cultural",
+    options: [
+      { key:"A", label:"Free speech — offense isn't a good enough reason to ban or punish it." },
+      { key:"B", label:"Some things are sacred — creators should self-censor to respect religious sentiment." },
+      { key:"C", label:"Free speech in principle, but creators should expect backlash too, not need legal bans either way." }
+    ]
+  },
+  {
+    text: "Farm laws or major economic reforms are pushed through quickly by the central government.",
+    axis: "general",
+    options: [
+      { key:"A", label:"Government overreach — big changes need consultation with those affected." },
+      { key:"B", label:"Reform requires speed — consultation slows down necessary change too much." },
+      { key:"C", label:"Depends on whether the reform itself is sound, not just on how fast it passed." }
+    ]
+  },
+  {
+    text: "Inter-faith or inter-caste marriage.",
+    axis: "cultural",
+    options: [
+      { key:"A", label:"Entirely a personal choice — families and society should have no say." },
+      { key:"B", label:"Families and communities have a legitimate stake in preserving their traditions." },
+      { key:"C", label:"Personal choice, but understandable why it creates real family/social friction." }
+    ]
+  },
+  {
+    text: "Criticism of the Indian armed forces or government policy on sensitive security issues.",
+    axis: "general",
+    options: [
+      { key:"A", label:"Should be fully open to criticism and debate, like any other policy." },
+      { key:"B", label:"Some restraint is needed — public criticism on security matters can be used against national interest." },
+      { key:"C", label:"Debate is fine, but tone and context (e.g. active conflict) matter." }
+    ]
+  },
+  {
+    text: "Government welfare schemes — free rations, subsidies, direct cash transfers.",
+    axis: "economic",
+    options: [
+      { key:"A", label:"Expand them — they're essential to reduce poverty and inequality." },
+      { key:"B", label:"Reduce them — they create dependency and strain government finances." },
+      { key:"C", label:"Useful as safety nets, but should be targeted and time-limited, not permanent." }
+    ]
+  },
+  {
+    text: "Uniform Civil Code — one common set of personal laws for marriage, divorce, and inheritance, replacing separate religion-based laws.",
+    axis: "cultural",
+    options: [
+      { key:"A", label:"Oppose it, at least for now — religious communities should keep their own personal laws." },
+      { key:"B", label:"Support it — one law for all citizens regardless of religion is fairer and more equal." },
+      { key:"C", label:"Support it in principle, but implementation needs broad consensus first." }
+    ]
+  },
+  {
+    text: "India's foreign policy — deeper ties with the West vs. self-reliance and non-alignment.",
+    axis: "general",
+    options: [
+      { key:"A", label:"Deeper integration with global institutions and Western partners is good for India." },
+      { key:"B", label:"India should prioritize self-reliance (Atmanirbhar Bharat) and be wary of foreign dependence." },
+      { key:"C", label:"Engage with everyone pragmatically, based on India's interest case by case." }
+    ]
+  }
+];
+
+let current = 0;
+let answers = new Array(QUESTIONS.length).fill(null); // 'A' | 'B' | 'C'
+
+const qnumEl = document.getElementById('qnum');
+const trackFill = document.getElementById('trackFill');
+const scenarioEl = document.getElementById('scenario');
+const optionsEl = document.getElementById('options');
+const backBtn = document.getElementById('backBtn');
+const quizView = document.getElementById('quizView');
+const resultView = document.getElementById('resultView');
+const restartBtn = document.getElementById('restartBtn');
+
+// ---- Build hemicycle seats ----
+const seatsG = document.getElementById('seats');
+const CX = 240, CY = 240, ROWS = [70, 100, 130, 160];
+const seatColor = (t) => { // t: 0 (left) -> 1 (right)
+  if (t < 0.42) return 'var(--left)';
+  if (t > 0.58) return 'var(--right)';
+  return 'var(--center)';
+};
+ROWS.forEach((r, rowIdx) => {
+  const seatCount = 10 + rowIdx * 4;
+  for (let i = 0; i < seatCount; i++) {
+    const t = i / (seatCount - 1); // 0..1
+    const angle = Math.PI - t * Math.PI; // 180deg -> 0deg
+    const x = CX + r * Math.cos(angle);
+    const y = CY - r * Math.sin(angle);
+    const dot = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    dot.setAttribute('cx', x.toFixed(1));
+    dot.setAttribute('cy', y.toFixed(1));
+    dot.setAttribute('r', 3.2);
+    dot.setAttribute('fill', seatColor(t));
+    dot.setAttribute('opacity', 0.22);
+    dot.classList.add('seat');
+    seatsG.appendChild(dot);
+  }
+});
+
+function angleForScore(score /* -1..1 */){
+  // score -1 (full left) -> 180deg, 0 -> 90deg, 1 (full right) -> 0deg
+  const t = (score + 1) / 2; // 0..1
+  return Math.PI - t * Math.PI;
+}
+function positionMarker(score, radius){
+  const angle = angleForScore(score);
+  const x = CX + radius * Math.cos(angle);
+  const y = CY - radius * Math.sin(angle);
+  document.getElementById('marker').setAttribute('cx', x.toFixed(1));
+  document.getElementById('marker').setAttribute('cy', y.toFixed(1));
+  document.getElementById('markerGlow').setAttribute('cx', x.toFixed(1));
+  document.getElementById('markerGlow').setAttribute('cy', y.toFixed(1));
+}
+positionMarker(0, 145);
+
+function renderQuestion(){
+  const q = QUESTIONS[current];
+  qnumEl.textContent = `Q${current+1} / ${QUESTIONS.length}`;
+  trackFill.style.width = `${(current / QUESTIONS.length) * 100}%`;
+  scenarioEl.textContent = q.text;
+  optionsEl.innerHTML = '';
+  q.options.forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'opt';
+    if (answers[current] === opt.key) btn.classList.add('chosen');
+    btn.innerHTML = `<span class="tag">${opt.key}</span><span>${opt.label}</span>`;
+    btn.addEventListener('click', () => selectAnswer(opt.key));
+    optionsEl.appendChild(btn);
+  });
+  backBtn.classList.toggle('show', current > 0);
+
+  // live seat preview from answers so far
+  const partial = computeScore(answers.slice(0, current));
+  positionMarker(partial.overall, 145);
+}
+
+function selectAnswer(key){
+  answers[current] = key;
+  renderQuestion();
+  setTimeout(() => {
+    if (current < QUESTIONS.length - 1) {
+      current++;
+      renderQuestion();
+    } else {
+      showResults();
+    }
+  }, 260);
+}
+
+backBtn.addEventListener('click', () => {
+  if (current > 0) { current--; renderQuestion(); }
+});
+
+function valueFor(key){
+  if (key === 'A') return -1;
+  if (key === 'B') return 1;
+  return 0; // C
+}
+
+function computeScore(list){
+  let overallSum = 0, overallN = 0;
+  let econSum = 0, econN = 0;
+  let cultSum = 0, cultN = 0;
+  let a=0,b=0,c=0;
+  list.forEach((key, i) => {
+    if (key === null || key === undefined) return;
+    const v = valueFor(key);
+    overallSum += v; overallN++;
+    if (key === 'A') a++; else if (key === 'B') b++; else c++;
+    const axis = QUESTIONS[i].axis;
+    if (axis === 'economic'){ econSum += v; econN++; }
+    if (axis === 'cultural'){ cultSum += v; cultN++; }
+  });
+  return {
+    overall: overallN ? overallSum / overallN : 0,
+    econ: econN ? econSum / econN : 0,
+    cult: cultN ? cultSum / cultN : 0,
+    a, b, c
+  };
+}
+
+function labelFor(score){
+  if (score <= -0.35) return { title: "Left-leaning", body: "You lean toward secularism, redistribution, social reform, and skepticism of majoritarian nationalism. On most of these scenarios, you sided with equality and government-led correction over tradition or free-market speed." };
+  if (score >= 0.35) return { title: "Right-leaning", body: "You lean toward cultural or religious nationalism, free markets, tradition, and national self-reliance. On most of these scenarios, you sided with continuity, market freedom, or national interest over rapid reform." };
+  if (Math.abs(score) < 0.12) return { title: "Centrist", body: "You weighed most of these case by case rather than following one ideological line consistently — genuinely landing on \u201cit depends\u201d more often than picking a side outright." };
+  return score < 0 ? { title: "Leans left, but mixed", body: "You lean left overall, but picked up enough centrist or right-leaning answers that a single label doesn't fully capture you." } : { title: "Leans right, but mixed", body: "You lean right overall, but picked up enough centrist or left-leaning answers that a single label doesn't fully capture you." };
+}
+
+function dotPercent(score){ // score -1..1 -> 0..100
+  return ((score + 1) / 2) * 100;
+}
+
+function showResults(){
+  const result = computeScore(answers);
+  positionMarker(result.overall, 145);
+
+  quizView.style.display = 'none';
+  resultView.style.display = 'block';
+
+  const { title, body } = labelFor(result.overall);
+  document.getElementById('resultTitle').textContent = title;
+  document.getElementById('resultBody').textContent = body + " In the Indian context, economic and cultural positions often don't move together — the two bars below show how you split on each.";
+
+  document.getElementById('econDot').style.left = dotPercent(result.econ) + '%';
+  document.getElementById('cultDot').style.left = dotPercent(result.cult) + '%';
+
+  document.getElementById('cA').textContent = result.a;
+  document.getElementById('cB').textContent = result.b;
+  document.getElementById('cC').textContent = result.c;
+}
+
+restartBtn.addEventListener('click', () => {
+  current = 0;
+  answers = new Array(QUESTIONS.length).fill(null);
+  resultView.style.display = 'none';
+  quizView.style.display = 'block';
+  positionMarker(0, 145);
+  renderQuestion();
+});
+
+renderQuestion();
+</script>
+</body>
+</html>
